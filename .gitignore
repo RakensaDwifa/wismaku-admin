@@ -22,3 +22,6 @@ Thumbs.db
 # Vite
 npm-debug.log*
 .vercel
+
+.vercel
+.env*

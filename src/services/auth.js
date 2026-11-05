@@ -1,7 +1,8 @@
-import { request, USE_MOCK } from './api.js'
+import { USE_MOCK } from './api.js'
 import { readList, writeList, readObject, writeObject, notify } from './storage.js'
 import { UserPayloadSchema, parsePayload } from '../schemas/contracts.js'
 import { seedUsers, seedPartners, seedCoupons, seedBookings, seedProperties } from '../data/seed.js'
+import { supabase } from '../lib/supabase.js'
 
 export const USERS_KEY = 'wismaku_admin_users'
 export const PARTNERS_KEY = 'wismaku_admin_partners'
@@ -23,7 +24,7 @@ export function ensureSeed() {
 
 export async function login(email, password) {
   const clean = (email || '').trim().toLowerCase()
-  if (USE_MOCK) {
+  if (USE_MOCK || !supabase) {
     ensureSeed()
     const user = readList(USERS_KEY).find((u) => u.email.toLowerCase() === clean)
     if (!user || user.password !== password) throw new Error('Email atau password salah.')
@@ -36,29 +37,37 @@ export async function login(email, password) {
     notify(SESSION_EVENT)
     return user
   }
-  const user = await request('/auth/login', { method: 'POST', body: { email: clean, password } })
-  writeObject(ACTIVE_KEY, {
-    name: user.name,
-    email: user.email,
-    role: user.role,
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email: clean, password })
+  if (error) throw new Error('Email atau password salah.')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name, role')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  const user = {
+    id: data.user.id,
+    name: profile?.name || data.user.email?.split('@')[0],
+    email: data.user.email,
+    role: profile?.role || 'mitra',
     loggedInAt: new Date().toISOString(),
-  })
+  }
+
+  writeObject(ACTIVE_KEY, user)
   notify(SESSION_EVENT)
   return user
 }
 
 export function getActiveUser() {
-  if (USE_MOCK) return readObject(ACTIVE_KEY)
-  return null
+  return readObject(ACTIVE_KEY)
 }
 
 export async function logout() {
-  if (USE_MOCK) {
-    writeObject(ACTIVE_KEY, null)
-    notify(SESSION_EVENT)
-    return null
+  if (supabase) {
+    await supabase.auth.signOut().catch(() => {})
   }
-  await request('/auth/logout', { method: 'POST' })
   writeObject(ACTIVE_KEY, null)
   notify(SESSION_EVENT)
   return null
@@ -66,7 +75,7 @@ export async function logout() {
 
 export async function registerUser(payload) {
   const data = parsePayload(UserPayloadSchema, payload)
-  if (USE_MOCK) {
+  if (USE_MOCK || !supabase) {
     ensureSeed()
     const list = readList(USERS_KEY)
     if (list.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
@@ -82,7 +91,20 @@ export async function registerUser(payload) {
     notify(DATA_EVENT)
     return user
   }
-  const user = await request('/auth/register', { method: 'POST', body: data })
+
+  const { data: authUser, error } = await supabase.auth.signUp({
+    email: data.email,
+    password: data.password,
+    options: {
+      data: { name: data.name },
+    },
+  })
+  if (error) throw new Error(error.message)
+
+  if (authUser?.user) {
+    await supabase.from('profiles').update({ role: data.role, name: data.name }).eq('id', authUser.user.id)
+  }
+
   notify(DATA_EVENT)
-  return user
+  return { id: authUser.user.id, ...data }
 }

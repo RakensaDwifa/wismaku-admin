@@ -1,6 +1,9 @@
 const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
+export const USE_MOCK =
+  import.meta.env.MODE === 'test' ||
+  Boolean(import.meta.env.VITEST) ||
+  import.meta.env.VITE_USE_MOCK !== 'false'
 
 export async function request(path, { method = 'GET', body, headers = {} } = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
