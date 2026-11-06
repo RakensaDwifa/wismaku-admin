@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { getReviews, addReview, setReviewStatus } from './review.js'
+import { getReviews, addReview, setReviewStatus, replyReview } from './review.js'
 import { ensureSeed } from './auth.js'
 
 beforeEach(() => {
@@ -37,5 +37,33 @@ describe('review service', () => {
     const target = all[0]
     const up = await setReviewStatus(target.propertyId, target.id, 'nonaktif')
     expect(up.status).toBe('nonaktif')
+  })
+
+  it('dapat mengirim balasan resmi dari mitra pengelola', async () => {
+    ensureSeed()
+    const all = await getReviews()
+    const target = all[0]
+    const replyText = 'Terima kasih atas kunjungannya, kami tunggu kedatangan Anda kembali!'
+    const user = { name: 'Mitra Sukma' }
+
+    const res = await replyReview(target.id, replyText, user)
+    expect(res.replyText).toBe(replyText)
+    expect(res.repliedBy).toBe('Mitra Sukma')
+    expect(res.repliedAt).toBeTruthy()
+
+    const refreshed = await getReviews()
+    const found = refreshed.find((r) => r.id === target.id)
+    expect(found.reply).toBeTruthy()
+    expect(found.reply.replyText).toBe(replyText)
+  })
+
+  it('menolak balasan ulasan dengan teks kosong', async () => {
+    ensureSeed()
+    const all = await getReviews()
+    const target = all[0]
+
+    await expect(replyReview(target.id, '   ', { name: 'Mitra' })).rejects.toThrow(
+      'Teks balasan ulasan tidak boleh kosong.',
+    )
   })
 })

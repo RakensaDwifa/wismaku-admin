@@ -4,7 +4,30 @@ import { ReviewPayloadSchema, parsePayload } from '../schemas/contracts.js'
 import { PROPERTIES_KEY, DATA_EVENT, ensureSeed } from './auth.js'
 import { supabase } from '../lib/supabase.js'
 
+export const REVIEW_REPLIES_KEY = 'wismaku_admin_review_replies'
+
+export function getStoredReplies() {
+  try {
+    const raw = localStorage.getItem(REVIEW_REPLIES_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveStoredReply(reviewId, replyData) {
+  try {
+    const all = getStoredReplies()
+    all[reviewId] = replyData
+    localStorage.setItem(REVIEW_REPLIES_KEY, JSON.stringify(all))
+  } catch {
+    // ignore
+  }
+}
+
 export async function getReviews({ partnerEmail, propertyId } = {}) {
+  const storedReplies = getStoredReplies()
+
   if (USE_MOCK || !supabase) {
     ensureSeed()
     let properties = readList(PROPERTIES_KEY)
@@ -16,12 +39,17 @@ export async function getReviews({ partnerEmail, propertyId } = {}) {
       properties = properties.filter((p) => String(p.id) === String(propertyId))
     }
     return properties.flatMap((p) =>
-      (p.reviews || []).map((r) => ({
-        id: `${p.id}-${r.date}-${r.name}`,
-        propertyId: p.id,
-        propertyName: p.name,
-        ...r,
-      })),
+      (p.reviews || []).map((r) => {
+        const id = `${p.id}-${r.date}-${r.name}`
+        const reply = r.reply || storedReplies[id] || null
+        return {
+          id,
+          propertyId: p.id,
+          propertyName: p.name,
+          ...r,
+          reply,
+        }
+      }),
     )
   }
 
@@ -43,18 +71,76 @@ export async function getReviews({ partnerEmail, propertyId } = {}) {
     return request('/reviews')
   }
 
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    propertyId: r.hotel_id,
-    propertyName: r.hotels?.name || 'Penginapan WismaKu',
-    name: r.name,
-    city: r.city || 'Indonesia',
-    date: r.created_at ? r.created_at.slice(0, 10) : '2026-11-01',
-    rating: r.rating,
-    text: r.text,
-    verifiedGuest: Boolean(r.verified_guest),
-    status: 'aktif',
-  }))
+  return (data ?? []).map((r) => {
+    const reply =
+      storedReplies[r.id] ||
+      (r.reply_text
+        ? {
+            replyText: r.reply_text,
+            repliedAt: r.replied_at ? r.replied_at.slice(0, 10) : undefined,
+            repliedBy: r.replied_by || 'Pengelola Penginapan',
+          }
+        : null)
+
+    return {
+      id: r.id,
+      propertyId: r.hotel_id,
+      propertyName: r.hotels?.name || 'Penginapan WismaKu',
+      name: r.name,
+      city: r.city || 'Indonesia',
+      date: r.created_at ? r.created_at.slice(0, 10) : '2026-11-01',
+      rating: r.rating,
+      text: r.text,
+      verifiedGuest: Boolean(r.verified_guest),
+      status: 'aktif',
+      reply,
+    }
+  })
+}
+
+export async function replyReview(reviewId, replyText, user) {
+  if (!replyText || !replyText.trim()) {
+    throw new Error('Teks balasan ulasan tidak boleh kosong.')
+  }
+
+  const replyData = {
+    replyText: replyText.trim(),
+    repliedAt: new Date().toISOString().slice(0, 10),
+    repliedBy: user?.name || 'Pengelola Penginapan',
+  }
+
+  saveStoredReply(reviewId, replyData)
+
+  if (USE_MOCK || !supabase) {
+    ensureSeed()
+    const list = readList(PROPERTIES_KEY).map((p) => {
+      const reviews = (p.reviews || []).map((r) => {
+        const id = `${p.id}-${r.date}-${r.name}`
+        if (id === reviewId) {
+          return { ...r, reply: replyData }
+        }
+        return r
+      })
+      return { ...p, reviews }
+    })
+    writeList(PROPERTIES_KEY, list)
+  } else {
+    try {
+      await supabase
+        .from('reviews')
+        .update({
+          reply_text: replyData.replyText,
+          replied_at: new Date().toISOString(),
+          replied_by: replyData.repliedBy,
+        })
+        .eq('id', reviewId)
+    } catch {
+      // safe fallback in local storage
+    }
+  }
+
+  notify(DATA_EVENT)
+  return replyData
 }
 
 export async function setReviewStatus(propertyId, reviewId, status) {
