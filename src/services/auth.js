@@ -108,3 +108,71 @@ export async function registerUser(payload) {
   notify(DATA_EVENT)
   return { id: authUser.user.id, ...data }
 }
+
+export async function updateUserProfile({ name, phone }) {
+  if (!name || name.trim().length < 3) {
+    throw new Error('Nama pengelola minimal 3 karakter.')
+  }
+
+  const cleanName = name.trim()
+  const cleanPhone = (phone || '').trim()
+
+  const current = getActiveUser()
+  const updatedUser = {
+    ...current,
+    name: cleanName,
+    phone: cleanPhone,
+  }
+
+  writeObject(ACTIVE_KEY, updatedUser)
+
+  if (USE_MOCK || !supabase) {
+    ensureSeed()
+    const list = readList(USERS_KEY).map((u) => {
+      if (u.email.toLowerCase() === current?.email?.toLowerCase()) {
+        return { ...u, name: cleanName, phone: cleanPhone }
+      }
+      return u
+    })
+    writeList(USERS_KEY, list)
+  } else {
+    try {
+      await supabase.auth.updateUser({
+        data: { name: cleanName, phone: cleanPhone },
+      })
+      if (current?.id) {
+        await supabase.from('profiles').update({ name: cleanName }).eq('id', current.id)
+      }
+    } catch {
+      // fallback in local session
+    }
+  }
+
+  notify(SESSION_EVENT)
+  return updatedUser
+}
+
+export async function changePassword(newPassword) {
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('Password baru minimal 6 karakter.')
+  }
+
+  const current = getActiveUser()
+  if (USE_MOCK || !supabase) {
+    ensureSeed()
+    const list = readList(USERS_KEY).map((u) => {
+      if (u.email.toLowerCase() === current?.email?.toLowerCase()) {
+        return { ...u, password: newPassword }
+      }
+      return u
+    })
+    writeList(USERS_KEY, list)
+    return true
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+  if (error) throw new Error(error.message)
+  return true
+}

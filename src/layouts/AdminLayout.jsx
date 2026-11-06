@@ -4,6 +4,7 @@ import Badge from '../components/Badge.jsx'
 
 const OPERASIONAL_NAV = [
   { to: '/mitra', label: 'Dashboard Ringkasan', end: true },
+  { to: '/mitra/kalender', label: 'Kalender Okupansi' },
   { to: '/mitra/properti', label: 'Properti Saya' },
   { to: '/mitra/pesanan', label: 'Pesanan & Resepsionis' },
 ]
@@ -102,13 +103,27 @@ export default function AdminLayout() {
                 <Badge status={user.role || 'mitra'}>Mitra</Badge>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
-            >
-              Keluar
-            </button>
+            <div className="space-y-1.5">
+              <NavLink
+                to="/mitra/profil"
+                className={({ isActive }) =>
+                  `block text-center rounded-lg border border-slate-200 py-1.5 text-xs font-bold transition ${
+                    isActive
+                      ? 'bg-teal-50 text-teal-800 border-teal-300'
+                      : 'bg-white text-slate-700 hover:bg-slate-50'
+                  }`
+                }
+              >
+                Pengaturan Akun
+              </NavLink>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full rounded-lg border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+              >
+                Keluar
+              </button>
+            </div>
           </div>
         </div>
       </aside>

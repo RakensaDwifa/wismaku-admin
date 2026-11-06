@@ -8,6 +8,7 @@ import { useAuth } from './hooks/useAuth.js'
 const LoginPage = lazy(() => import('./pages/login/LoginPage.jsx'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'))
 const MitraDashboard = lazy(() => import('./pages/mitra/Dashboard.jsx'))
+const CalendarPage = lazy(() => import('./pages/mitra/Calendar.jsx'))
 const PropertiesPage = lazy(() => import('./pages/mitra/Properties.jsx'))
 const PropertyFormPage = lazy(() => import('./pages/mitra/PropertyForm.jsx'))
 const RoomsPage = lazy(() => import('./pages/mitra/Rooms.jsx'))
@@ -15,6 +16,7 @@ const CouponsPage = lazy(() => import('./pages/mitra/Coupons.jsx'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
 const FinancePage = lazy(() => import('./pages/mitra/Finance.jsx'))
 const ReviewsPage = lazy(() => import('./pages/mitra/Reviews.jsx'))
+const ProfilePage = lazy(() => import('./pages/mitra/Profile.jsx'))
 
 function HomeRedirect() {
   const { user } = useAuth()
@@ -38,6 +40,7 @@ export default function App() {
             }
           >
             <Route path="/mitra" element={<MitraDashboard />} />
+            <Route path="/mitra/kalender" element={<CalendarPage />} />
             <Route path="/mitra/properti" element={<PropertiesPage />} />
             <Route path="/mitra/properti/baru" element={<PropertyFormPage />} />
             <Route path="/mitra/properti/:id" element={<PropertyFormPage />} />
@@ -46,6 +49,7 @@ export default function App() {
             <Route path="/mitra/keuangan" element={<FinancePage />} />
             <Route path="/mitra/kupon" element={<CouponsPage />} />
             <Route path="/mitra/ulasan" element={<ReviewsPage />} />
+            <Route path="/mitra/profil" element={<ProfilePage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
