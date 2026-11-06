@@ -13,6 +13,8 @@ const PropertyFormPage = lazy(() => import('./pages/mitra/PropertyForm.jsx'))
 const RoomsPage = lazy(() => import('./pages/mitra/Rooms.jsx'))
 const CouponsPage = lazy(() => import('./pages/mitra/Coupons.jsx'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'))
+const FinancePage = lazy(() => import('./pages/mitra/Finance.jsx'))
+const ReviewsPage = lazy(() => import('./pages/mitra/Reviews.jsx'))
 
 function HomeRedirect() {
   const { user } = useAuth()
@@ -41,7 +43,9 @@ export default function App() {
             <Route path="/mitra/properti/:id" element={<PropertyFormPage />} />
             <Route path="/mitra/properti/:id/kamar" element={<RoomsPage />} />
             <Route path="/mitra/pesanan" element={<OrdersPage />} />
+            <Route path="/mitra/keuangan" element={<FinancePage />} />
             <Route path="/mitra/kupon" element={<CouponsPage />} />
+            <Route path="/mitra/ulasan" element={<ReviewsPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

@@ -2,11 +2,16 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
 import Badge from '../components/Badge.jsx'
 
-const NAV_ITEMS = [
+const OPERASIONAL_NAV = [
   { to: '/mitra', label: 'Dashboard Ringkasan', end: true },
   { to: '/mitra/properti', label: 'Properti Saya' },
-  { to: '/mitra/pesanan', label: 'Pesanan Masuk' },
+  { to: '/mitra/pesanan', label: 'Pesanan & Resepsionis' },
+]
+
+const KEUANGAN_NAV = [
+  { to: '/mitra/keuangan', label: 'Keuangan & Payouts' },
   { to: '/mitra/kupon', label: 'Kupon Diskon' },
+  { to: '/mitra/ulasan', label: 'Ulasan & Kepuasan' },
 ]
 
 export default function AdminLayout() {
@@ -38,16 +43,41 @@ export default function AdminLayout() {
 
         <div className="flex flex-col justify-between p-4" style={{ height: 'calc(100vh - 4rem)' }}>
           <div className="space-y-6 overflow-y-auto">
+            {/* Operasional */}
             <div>
               <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Pengelolaan Properti
+                Operasional Harian
               </div>
-              <nav className="mt-2 space-y-1" aria-label="Navigasi portal mitra">
-                {NAV_ITEMS.map((item) => (
+              <nav className="mt-2 space-y-1" aria-label="Navigasi operasional mitra">
+                {OPERASIONAL_NAV.map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     end={item.end}
+                    className={({ isActive }) =>
+                      `flex items-center rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                        isActive
+                          ? 'bg-teal-50 text-teal-800 font-extrabold'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+            </div>
+
+            {/* Keuangan & Reputasi */}
+            <div>
+              <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Keuangan & Reputasi
+              </div>
+              <nav className="mt-2 space-y-1" aria-label="Navigasi keuangan dan reputasi mitra">
+                {KEUANGAN_NAV.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
                     className={({ isActive }) =>
                       `flex items-center rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
                         isActive

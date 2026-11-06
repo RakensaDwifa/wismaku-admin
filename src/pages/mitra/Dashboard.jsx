@@ -62,12 +62,17 @@ export default function MitraDashboard() {
 
       {/* Rincian Bagi Hasil & Keuangan */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-base font-extrabold text-slate-900">Rincian Bagi Hasil & Keuangan</h2>
-          <p className="text-xs text-slate-500">
-            Skema pembagian hasil otomatis 85% untuk mitra pemilik penginapan dan 15% untuk biaya operasional
-            platform.
-          </p>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900">Rincian Bagi Hasil & Keuangan</h2>
+            <p className="text-xs text-slate-500">
+              Skema pembagian hasil otomatis 85% untuk mitra pemilik penginapan dan 15% untuk biaya
+              operasional platform.
+            </p>
+          </div>
+          <Link to="/mitra/keuangan" className="text-xs font-bold text-teal-700 hover:underline">
+            Riwayat Payouts & Rekening &rarr;
+          </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-4">
