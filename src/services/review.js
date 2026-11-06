@@ -93,6 +93,7 @@ export async function getReviews({ partnerEmail, propertyId } = {}) {
       text: r.text,
       verifiedGuest: Boolean(r.verified_guest),
       status: 'aktif',
+      isHidden: Boolean(r.is_hidden),
       reply,
     }
   })

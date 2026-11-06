@@ -195,6 +195,11 @@ export default function Reviews() {
                             Tamu Terverifikasi
                           </span>
                         )}
+                        {r.isHidden && (
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                            Ditangguhkan HQ
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-slate-500">{r.propertyName}</div>
                     </div>
