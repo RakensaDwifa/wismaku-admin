@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
 import { useData } from '../hooks/useData.js'
 import { getBookings, updateBookingStatus, BOOKING_STATUS_LABELS } from '../services/booking.js'
+import { generateBookingsCSV, downloadCSV } from '../services/export.js'
 import StatCard from '../components/StatCard.jsx'
 import Badge from '../components/Badge.jsx'
 import Modal from '../components/Modal.jsx'
@@ -114,13 +115,25 @@ export default function OrdersPage() {
           ))}
         </div>
 
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cari ID Booking, nama tamu, no HP..."
-          className="rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari ID Booking, nama tamu, no HP..."
+            className="rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const csv = generateBookingsCSV(filtered)
+              downloadCSV(`wismaku-reservasi-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+            }}
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            Unduh CSV
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

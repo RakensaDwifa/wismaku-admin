@@ -32,6 +32,9 @@ export const PropertyPayloadSchema = z.object({
   amenities: z.array(z.string()).default([]),
   status: PropertyStatusSchema.default('aktif'),
   partnerEmail: z.string().email('Email mitra tidak valid.'),
+  receptionPhone: z.string().optional(),
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
 })
 
 export const RoomTypePayloadSchema = z.object({

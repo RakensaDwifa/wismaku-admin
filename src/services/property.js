@@ -27,6 +27,10 @@ function dbToProperty(row) {
     partnerEmail: row.partner_email || '',
     commissionRate: row.commission_rate ?? 0.15,
     status: row.policies?.status || 'aktif',
+    receptionPhone: row.policies?.reception_phone || row.reception_phone || '',
+    checkInTime: row.policies?.check_in_time || '14:00',
+    checkOutTime: row.policies?.check_out_time || '12:00',
+    policies: row.policies ?? {},
     rating: row.rating ?? 0,
     reviewCount: row.review_count ?? 0,
     roomTypes,
@@ -110,6 +114,12 @@ export async function createProperty(payload) {
     partner_email: data.partnerEmail?.trim().toLowerCase(),
     commission_rate: 0.15,
     room_types: [],
+    policies: {
+      status: 'aktif',
+      reception_phone: data.receptionPhone || '',
+      check_in_time: data.checkInTime || '14:00',
+      check_out_time: data.checkOutTime || '12:00',
+    },
   }
   const { data: created, error } = await supabase.from('hotels').insert(row).select().single()
   if (error) throw new Error(error.message)
@@ -127,6 +137,8 @@ export async function updateProperty(id, payload) {
     return list.find((p) => String(p.id) === String(id))
   }
 
+  const prop = await getProperty(id)
+  const currentPolicies = prop?.policies ?? {}
   const updates = {
     name: data.name,
     area: data.area || null,
@@ -135,6 +147,13 @@ export async function updateProperty(id, payload) {
     description: data.desc || null,
     amenities: data.amenities || [],
     partner_email: data.partnerEmail?.trim().toLowerCase(),
+    policies: {
+      ...currentPolicies,
+      status: data.status || currentPolicies.status || 'aktif',
+      reception_phone: data.receptionPhone || currentPolicies.reception_phone || '',
+      check_in_time: data.checkInTime || currentPolicies.check_in_time || '14:00',
+      check_out_time: data.checkOutTime || currentPolicies.check_out_time || '12:00',
+    },
   }
   const { data: updated, error } = await supabase
     .from('hotels')

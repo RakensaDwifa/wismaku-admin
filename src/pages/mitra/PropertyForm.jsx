@@ -15,6 +15,9 @@ const EMPTY = {
   desc: '',
   amenities: '',
   status: 'aktif',
+  receptionPhone: '',
+  checkInTime: '14:00',
+  checkOutTime: '12:00',
 }
 
 export default function PropertyFormPage() {
@@ -44,6 +47,9 @@ export default function PropertyFormPage() {
           desc: p.desc || '',
           amenities: (p.amenities || []).join(', '),
           status: p.status || 'aktif',
+          receptionPhone: p.receptionPhone || '',
+          checkInTime: p.checkInTime || '14:00',
+          checkOutTime: p.checkOutTime || '12:00',
         })
       }
       setLoading(false)
@@ -75,6 +81,9 @@ export default function PropertyFormPage() {
           .filter(Boolean),
         status: form.status,
         partnerEmail: user.email,
+        receptionPhone: form.receptionPhone.trim() || undefined,
+        checkInTime: form.checkInTime.trim() || '14:00',
+        checkOutTime: form.checkOutTime.trim() || '12:00',
       }
       if (isEdit) await updateProperty(id, payload)
       else await createProperty(payload)
@@ -87,89 +96,175 @@ export default function PropertyFormPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <Link to="/mitra/properti" className="text-sm font-bold text-rd hover:underline">
-        &larr; Kembali ke properti
-      </Link>
-      <h1 className="text-2xl font-extrabold text-rd-text">{isEdit ? 'Edit Properti' : 'Tambah Properti'}</h1>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex items-center justify-between">
+        <Link
+          to="/mitra/properti"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-teal-700 transition"
+        >
+          &larr; Kembali ke Daftar Properti
+        </Link>
+      </div>
+
+      <div>
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          {isEdit ? 'Perbarui Informasi Penginapan' : 'Daftarkan Penginapan Baru'}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Lengkapi data profil properti, informasi operasional resepsionis, dan waktu check-in/out tamu.
+        </p>
+      </div>
 
       <ErrorBanner message={error} onDismiss={() => setError('')} />
 
-      <form
-        onSubmit={onSubmit}
-        className="space-y-4 rounded-xl border border-rd-border bg-white p-6 shadow-rd"
-      >
-        <FormField label="Nama Properti">
-          <input
-            className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-            value={form.name}
-            onChange={set('name')}
-            required
-          />
-        </FormField>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Kota">
+      <form onSubmit={onSubmit} className="space-y-6">
+        {/* Seksi Informasi Utama */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-slate-900">1. Identitas & Lokasi Penginapan</h2>
+            <p className="text-xs text-slate-400">Nama hotel/wisma dan alamat lengkap untuk panduan tamu.</p>
+          </div>
+
+          <FormField label="Nama Penginapan / Hotel">
             <input
-              className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-              value={form.city}
-              onChange={set('city')}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              placeholder="misal: Wisma Syariah Kelapa Gading"
+              value={form.name}
+              onChange={set('name')}
               required
             />
           </FormField>
-          <FormField label="Area / Kawasan">
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Kota">
+              <input
+                className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+                placeholder="misal: Jakarta"
+                value={form.city}
+                onChange={set('city')}
+                required
+              />
+            </FormField>
+            <FormField label="Area / Kawasan Sekitar">
+              <input
+                className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+                placeholder="misal: Dekat Mall Kelapa Gading"
+                value={form.area}
+                onChange={set('area')}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Alamat Lengkap">
             <input
-              className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-              value={form.area}
-              onChange={set('area')}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              placeholder="Nama jalan, nomor bangunan, RT/RW, kelurahan..."
+              value={form.address}
+              onChange={set('address')}
+            />
+          </FormField>
+
+          <FormField label="URL Gambar Utama" hint="URL foto tampak depan atau lobby utama penginapan.">
+            <input
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-mono text-xs text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              type="url"
+              placeholder="https://images.unsplash.com/photo-..."
+              value={form.img}
+              onChange={set('img')}
+            />
+          </FormField>
+
+          <FormField label="Deskripsi Penginapan">
+            <textarea
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              rows={3}
+              placeholder="Ceritakan keunggulan penginapan, suasana, dan aksesibilitas untuk tamu..."
+              value={form.desc}
+              onChange={set('desc')}
+            />
+          </FormField>
+
+          <FormField
+            label="Fasilitas Unggulan"
+            hint="Pisahkan dengan tanda koma (misal: WiFi Cepat, AC Dingin, Parkir Luas, Sarapan)"
+          >
+            <input
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              placeholder="WiFi Cepat, AC, Smart TV, Parkir Mobil"
+              value={form.amenities}
+              onChange={set('amenities')}
             />
           </FormField>
         </div>
-        <FormField label="Alamat">
-          <input
-            className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-            value={form.address}
-            onChange={set('address')}
-          />
-        </FormField>
-        <FormField label="URL Gambar" hint="Opsional — URL gambar properti (Unsplash, dll).">
-          <input
-            className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-            type="url"
-            value={form.img}
-            onChange={set('img')}
-          />
-        </FormField>
-        <FormField label="Deskripsi">
-          <textarea
-            className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-            rows={3}
-            value={form.desc}
-            onChange={set('desc')}
-          />
-        </FormField>
-        <FormField label="Fasilitas" hint="Pisahkan dengan koma, mis. WiFi Gratis, AC, Sarapan">
-          <input
-            className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm focus:border-rd"
-            value={form.amenities}
-            onChange={set('amenities')}
-          />
-        </FormField>
-        <FormField label="Status">
-          <select
-            className="w-full rounded-lg border border-rd-border px-3 py-2.5 text-sm"
-            value={form.status}
-            onChange={set('status')}
+
+        {/* Seksi Operasional Resepsionis */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="border-b border-slate-100 pb-3">
+            <h2 className="text-sm font-extrabold text-slate-900">
+              2. Kontak & Kebijakan Operasional Front Desk
+            </h2>
+            <p className="text-xs text-slate-400">
+              Kontak WhatsApp dan jadwal resepsionis untuk koordinasi tamu.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormField label="WhatsApp Resepsionis" hint="Nomor aktif front desk">
+              <input
+                type="text"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-mono font-semibold text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+                placeholder="08123456789"
+                value={form.receptionPhone}
+                onChange={set('receptionPhone')}
+              />
+            </FormField>
+
+            <FormField label="Waktu Check-In Standar">
+              <input
+                type="time"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-teal-700 focus:outline-none"
+                value={form.checkInTime}
+                onChange={set('checkInTime')}
+              />
+            </FormField>
+
+            <FormField label="Waktu Check-Out Standar">
+              <input
+                type="time"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-teal-700 focus:outline-none"
+                value={form.checkOutTime}
+                onChange={set('checkOutTime')}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Status Penayangan Properti">
+            <select
+              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-teal-700 focus:outline-none"
+              value={form.status}
+              onChange={set('status')}
+            >
+              <option value="aktif">Aktif — Tampil di pencarian & dapat dipesan tamu</option>
+              <option value="nonaktif">Nonaktif — Disembunyikan sementara</option>
+            </select>
+          </FormField>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            className="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            onClick={() => navigate('/mitra/properti')}
           >
-            <option value="aktif">Aktif</option>
-            <option value="nonaktif">Nonaktif</option>
-          </select>
-        </FormField>
-        <div className="flex justify-end gap-3">
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/mitra/properti')}>
             Batal
           </button>
-          <button className="btn btn-primary" type="submit" disabled={busy}>
-            {busy ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Properti'}
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg bg-teal-700 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-teal-800 disabled:opacity-50"
+          >
+            {busy ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Daftarkan Properti'}
           </button>
         </div>
       </form>

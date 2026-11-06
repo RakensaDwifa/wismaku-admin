@@ -15,22 +15,25 @@ export default function Modal({ onClose, title, children }) {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-[200] grid place-items-center bg-black/55 p-5" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[200] grid place-items-center bg-slate-900/60 backdrop-blur-sm p-5"
+      onClick={onClose}
+    >
       <div
-        className="animate-modal-in relative max-h-[calc(100vh-40px)] w-[min(520px,100%)] overflow-y-auto rounded-2xl bg-white p-6 shadow-rd-lg outline-none"
+        className="animate-modal-in relative max-h-[calc(100vh-40px)] w-[min(540px,100%)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id="modal-title" className="text-lg font-extrabold text-rd-text">
+        <div className="mb-4 flex items-start justify-between gap-4 border-b border-slate-100 pb-3">
+          <h2 id="modal-title" className="text-base font-extrabold text-slate-900">
             {title}
           </h2>
           <button
             type="button"
-            className="grid size-8 place-items-center rounded-full bg-rd-soft text-xl leading-none text-rd-muted hover:text-rd"
+            className="grid size-7 place-items-center rounded-lg bg-slate-100 text-base leading-none text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
             onClick={onClose}
             aria-label="Tutup"
           >

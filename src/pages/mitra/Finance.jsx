@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth.js'
 import { useData } from '../../hooks/useData.js'
 import { getPayouts, getBankInfo, saveBankInfo } from '../../services/payout.js'
 import { getBookings } from '../../services/booking.js'
+import { generatePayoutsCSV, downloadCSV } from '../../services/export.js'
 import StatCard from '../../components/StatCard.jsx'
 import Badge from '../../components/Badge.jsx'
 import FormField from '../../components/FormField.jsx'
@@ -183,9 +184,23 @@ export default function Finance() {
                 Daftar transfer bagi hasil yang dikirimkan oleh WismaKu HQ
               </p>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600">
-              {payouts.length} Riwayat
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-600">
+                {payouts.length} Riwayat
+              </span>
+              {payouts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const csv = generatePayoutsCSV(payouts)
+                    downloadCSV(`wismaku-payouts-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+                  }}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  Unduh CSV
+                </button>
+              )}
+            </div>
           </div>
 
           {payouts.length === 0 ? (
