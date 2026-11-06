@@ -6,6 +6,7 @@ import { generateBookingsCSV, downloadCSV } from '../services/export.js'
 import StatCard from '../components/StatCard.jsx'
 import Badge from '../components/Badge.jsx'
 import Modal from '../components/Modal.jsx'
+import ReceiptModal from '../components/ReceiptModal.jsx'
 import EmptyState from '../components/EmptyState.jsx'
 import PageLoader from '../components/PageLoader.jsx'
 
@@ -17,6 +18,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [busyId, setBusyId] = useState(null)
   const [activeBooking, setActiveBooking] = useState(null)
+  const [printingBooking, setPrintingBooking] = useState(null)
 
   if (!data) return <PageLoader />
 
@@ -188,6 +190,15 @@ export default function OrdersPage() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
+                        onClick={() => setPrintingBooking(b)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                        title="Cetak Voucher / Struk Check-In"
+                      >
+                        🖨️ Struk
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => setActiveBooking(b)}
                         className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"
                       >
@@ -281,6 +292,13 @@ export default function OrdersPage() {
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPrintingBooking(activeBooking)}
+                className="rounded-lg border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-bold text-teal-800 hover:bg-teal-100 transition"
+              >
+                🖨️ Cetak Struk Check-In
+              </button>
               {activeBooking.status === 'confirmed' && (
                 <button
                   type="button"
@@ -301,6 +319,9 @@ export default function OrdersPage() {
           </div>
         </Modal>
       )}
+
+      {/* Modal Cetak Struk Registrasi */}
+      {printingBooking && <ReceiptModal booking={printingBooking} onClose={() => setPrintingBooking(null)} />}
     </div>
   )
 }
