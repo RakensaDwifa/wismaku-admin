@@ -5,6 +5,7 @@ import { getProperties } from '../../services/property.js'
 import { getBookings } from '../../services/booking.js'
 import { getCoupons } from '../../services/coupon.js'
 import StatCard from '../../components/StatCard.jsx'
+import Badge from '../../components/Badge.jsx'
 import PageLoader from '../../components/PageLoader.jsx'
 
 export default function MitraDashboard() {
@@ -28,51 +29,72 @@ export default function MitraDashboard() {
   const pendingCheckIn = bookings.filter((b) => b.status === 'confirmed').length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-extrabold text-rd-text">Dashboard Mitra Extranet</h1>
-        <p className="text-sm text-rd-muted">
-          Ringkasan operasional properti, arus kas reservasi, dan transparansi bagi hasil WismaKu.
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">Ringkasan Operasional Mitra</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Monitoring terpusat properti penginapan, reservasi tamu, dan transparansi bagi hasil WismaKu.
         </p>
       </div>
 
+      {/* Grid Metrik Utama */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Properti Dikelola" value={properties.length} hint="Terhubung di sistem katalog" />
+        <StatCard
+          label="Properti Dikelola"
+          value={properties.length}
+          hint="Terhubung di sistem katalog"
+          badge="Katalog"
+        />
         <StatCard label="Tipe Kamar" value={totalRooms} hint="Kamar aktif dipasarkan" />
         <StatCard
           label="Tamu Menginap / Datang"
           value={pendingCheckIn}
           hint="Pesanan lunas menunggu check-out"
+          badge={pendingCheckIn > 0 ? `${pendingCheckIn} Aktif` : 'Clear'}
         />
         <StatCard
           label="Pendapatan Bersih (85%)"
           value={`Rp ${netRevenue.toLocaleString('id-ID')}`}
-          hint={`Kotor: Rp ${grossRevenue.toLocaleString('id-ID')}`}
+          hint={`Omzet Kotor: Rp ${grossRevenue.toLocaleString('id-ID')}`}
+          badge="Net 85%"
         />
       </div>
 
-      <div className="rounded-xl border border-rd-border bg-white p-5 shadow-rd">
-        <h2 className="mb-4 text-base font-extrabold text-rd-text">Rincian Bagi Hasil & Keuangan</h2>
+      {/* Rincian Bagi Hasil & Keuangan */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4">
+          <h2 className="text-base font-extrabold text-slate-900">Rincian Bagi Hasil & Keuangan</h2>
+          <p className="text-xs text-slate-500">
+            Skema pembagian hasil otomatis 85% untuk mitra pemilik penginapan dan 15% untuk biaya operasional
+            platform.
+          </p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg bg-rd-soft p-4">
-            <div className="text-xs font-bold text-rd-muted">Total Omzet Pesanan (Gross)</div>
-            <div className="mt-1 text-xl font-extrabold text-rd-text">
+          <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-4">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Total Omzet Pesanan (Gross)
+            </div>
+            <div className="mt-1.5 text-xl font-extrabold text-slate-900">
               Rp {grossRevenue.toLocaleString('id-ID')}
             </div>
-            <div className="mt-1 text-xs text-rd-muted">
+            <div className="mt-1 text-xs text-slate-500">
               Dari {paidBookings.length} pesanan terkonfirmasi/selesai
             </div>
           </div>
-          <div className="rounded-lg bg-amber-50 p-4">
-            <div className="text-xs font-bold text-amber-700">Potongan Bagi Hasil WismaKu (15%)</div>
-            <div className="mt-1 text-xl font-extrabold text-amber-900">
+          <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-4">
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">
+              Potongan Bagi Hasil WismaKu (15%)
+            </div>
+            <div className="mt-1.5 text-xl font-extrabold text-amber-900">
               Rp {platformFee.toLocaleString('id-ID')}
             </div>
             <div className="mt-1 text-xs text-amber-700">Biaya pemeliharaan sistem & payment gateway</div>
           </div>
-          <div className="rounded-lg bg-emerald-50 p-4">
-            <div className="text-xs font-bold text-emerald-700">Hak Bersih Mitra (Net Payout)</div>
-            <div className="mt-1 text-xl font-extrabold text-emerald-900">
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-4">
+            <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+              Hak Bersih Mitra (Net Payout)
+            </div>
+            <div className="mt-1.5 text-xl font-extrabold text-emerald-900">
               Rp {netRevenue.toLocaleString('id-ID')}
             </div>
             <div className="mt-1 text-xs text-emerald-700">Siap dicairkan via transfer bank berkala</div>
@@ -80,57 +102,109 @@ export default function MitraDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-rd-border bg-white p-5 shadow-rd">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-extrabold text-rd-text">Properti Saya</h2>
-            <Link to="/mitra/properti" className="text-sm font-bold text-rd hover:underline">
-              Kelola Kamar & Harga
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Properti Dikelola */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900">Properti Dikelola</h2>
+              <p className="text-xs text-slate-500">Daftar penginapan aktif Anda di WismaKu</p>
+            </div>
+            <Link to="/mitra/properti" className="text-xs font-bold text-teal-700 hover:underline">
+              Kelola Kamar & Harga ({properties.length})
             </Link>
           </div>
-          <ul className="space-y-2">
-            {properties.slice(0, 4).map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between gap-3 border-b border-rd-border pb-2 last:border-0 last:pb-0"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-rd-text">{p.name}</p>
-                  <p className="text-xs text-rd-muted">{p.city}</p>
+
+          {properties.length === 0 ? (
+            <p className="text-sm text-slate-400">Belum ada properti terdaftar.</p>
+          ) : (
+            <div className="space-y-3">
+              {properties.slice(0, 4).map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3"
+                >
+                  <div className="min-w-0 pr-3">
+                    <div className="truncate text-sm font-bold text-slate-800">{p.name}</div>
+                    <div className="text-xs text-slate-500">
+                      {p.city} • {p.area || 'Pusat Kota'}
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-bold text-teal-800">
+                    {p.roomTypes?.length || 0} Tipe Kamar
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-rd-dark bg-rd-teal-bg px-2.5 py-1 rounded-full">
-                  {p.roomTypes?.length || 0} Tipe Kamar
-                </span>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="rounded-xl border border-rd-border bg-white p-5 shadow-rd">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-extrabold text-rd-text">Kupon Khusus Properti</h2>
-            <Link to="/mitra/kupon" className="text-sm font-bold text-rd hover:underline">
-              Kelola Kupon
+        {/* Pesanan Masuk Terbaru */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900">Pesanan Masuk Terbaru</h2>
+              <p className="text-xs text-slate-500">Reservasi tamu untuk kamar penginapan Anda</p>
+            </div>
+            <Link to="/mitra/pesanan" className="text-xs font-bold text-teal-700 hover:underline">
+              Semua Pesanan ({bookings.length})
             </Link>
           </div>
-          <ul className="space-y-2">
-            {coupons.length === 0 && <li className="text-sm text-rd-muted">Belum ada kupon promo aktif.</li>}
-            {coupons.slice(0, 4).map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between gap-3 border-b border-rd-border pb-2 last:border-0 last:pb-0"
-              >
-                <div>
-                  <p className="text-sm font-bold text-rd-text">{c.code}</p>
-                  <p className="text-xs text-rd-muted">{c.label}</p>
+
+          {bookings.length === 0 ? (
+            <p className="text-sm text-slate-400">Belum ada transaksi pemesanan.</p>
+          ) : (
+            <div className="space-y-3">
+              {bookings.slice(0, 4).map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-teal-700">{b.id}</span>
+                      <span className="text-xs font-semibold text-slate-700">{b.guestName}</span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {b.propertyName} • Rp {Number(b.totalPrice || 0).toLocaleString('id-ID')}
+                    </div>
+                  </div>
+                  <Badge status={b.status} />
                 </div>
-                <span className="text-xs font-bold text-rd bg-rd-soft px-2.5 py-1 rounded-full">
-                  Diskon {c.pct}%
-                </span>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Kupon Diskon Aktif */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900">Kupon Khusus Properti</h2>
+            <p className="text-xs text-slate-500">Voucher potongan harga khusus untuk kamar mitra Anda</p>
+          </div>
+          <Link to="/mitra/kupon" className="text-xs font-bold text-teal-700 hover:underline">
+            Kelola Kupon ({coupons.length})
+          </Link>
+        </div>
+        {coupons.length === 0 ? (
+          <p className="text-sm text-slate-400">Belum ada kupon promo aktif.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+            {coupons.slice(0, 4).map((c) => (
+              <div key={c.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-teal-800">{c.code}</span>
+                  <span className="rounded border border-teal-200 bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">
+                    Diskon {c.pct}%
+                  </span>
+                </div>
+                <div className="mt-1 truncate text-xs text-slate-600">{c.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
