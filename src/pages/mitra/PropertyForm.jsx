@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.js'
 import { createProperty, updateProperty, getProperty } from '../../services/property.js'
+import { uploadHotelMedia } from '../../services/storageUpload.js'
 import FormField from '../../components/FormField.jsx'
 import ErrorBanner from '../../components/ErrorBanner.jsx'
 import PageLoader from '../../components/PageLoader.jsx'
@@ -30,6 +31,7 @@ export default function PropertyFormPage() {
   const [loading, setLoading] = useState(isEdit)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (!isEdit) return
@@ -62,6 +64,21 @@ export default function PropertyFormPage() {
   if (loading) return <PageLoader />
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+    try {
+      const { publicUrl } = await uploadHotelMedia(file, { folder: 'hotels' })
+      setForm((f) => ({ ...f, img: publicUrl }))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -164,14 +181,44 @@ export default function PropertyFormPage() {
             />
           </FormField>
 
-          <FormField label="URL Gambar Utama" hint="URL foto tampak depan atau lobby utama penginapan.">
-            <input
-              className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-mono text-xs text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
-              type="url"
-              placeholder="https://images.unsplash.com/photo-..."
-              value={form.img}
-              onChange={set('img')}
-            />
+          <FormField
+            label="Foto Utama Penginapan"
+            hint="Unggah langsung dari perangkat Anda (JPG/PNG/WEBP maks 5MB) atau tempel URL gambar."
+          >
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-mono text-xs text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+                  type="url"
+                  placeholder="https://images.unsplash.com/photo-..."
+                  value={form.img}
+                  onChange={set('img')}
+                />
+                <label className="relative inline-flex items-center justify-center rounded-lg border border-teal-700 bg-teal-50 px-4 py-2.5 text-xs font-bold text-teal-800 transition hover:bg-teal-100 cursor-pointer shrink-0">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="sr-only"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                  />
+                  {uploading ? 'Mengunggah...' : 'Unggah Foto'}
+                </label>
+              </div>
+
+              {form.img && (
+                <div className="relative inline-block overflow-hidden rounded-lg border border-slate-200">
+                  <img
+                    src={form.img}
+                    alt="Pratinjau Foto Penginapan"
+                    className="h-32 w-48 object-cover bg-slate-100"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </FormField>
 
           <FormField label="Deskripsi Penginapan">

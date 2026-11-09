@@ -1,5 +1,9 @@
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
+import { supabase } from '../lib/supabase.js'
+import { notify } from '../services/storage.js'
+import { DATA_EVENT } from '../services/auth.js'
 import Badge from '../components/Badge.jsx'
 
 const OPERASIONAL_NAV = [
@@ -18,6 +22,64 @@ const KEUANGAN_NAV = [
 export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [toast, setToast] = useState(null)
+
+  useEffect(() => {
+    if (!supabase || !user?.email) return
+
+    let active = true
+    let channel = null
+
+    async function subscribeRealtime() {
+      try {
+        const { data: hotels } = await supabase
+          .from('hotels')
+          .select('id, name')
+          .eq('partner_email', String(user.email).trim().toLowerCase())
+
+        if (!active) return
+        const hotelIds = new Set((hotels ?? []).map((h) => String(h.id)))
+        const hotelNameMap = new Map((hotels ?? []).map((h) => [String(h.id), h.name]))
+
+        channel = supabase
+          .channel(`wismaku-mitra-${user.id || 'live'}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+            const hId = String(payload.new?.hotel_id || payload.old?.hotel_id || '')
+            if (hotelIds.size === 0 || hotelIds.has(hId)) {
+              notify(DATA_EVENT)
+              const hotelName = hotelNameMap.get(hId) || 'Properti Anda'
+              if (payload.eventType === 'INSERT') {
+                setToast(
+                  `Pesanan Baru (${hotelName}): ${payload.new?.guest_name || 'Tamu'} (#${String(payload.new?.id).slice(0, 8)})`,
+                )
+              } else if (payload.eventType === 'UPDATE' && payload.new?.status !== payload.old?.status) {
+                setToast(
+                  `Status Pesanan #${String(payload.new?.id).slice(0, 8)} berubah: ${payload.new?.status}`,
+                )
+              }
+            }
+          })
+          .subscribe()
+      } catch (err) {
+        console.warn('[AdminLayout] Realtime subscription warning:', err)
+      }
+    }
+
+    subscribeRealtime()
+
+    return () => {
+      active = false
+      if (channel && supabase) {
+        supabase.removeChannel(channel)
+      }
+    }
+  }, [user?.email, user?.id])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 5000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   if (!user) return null
 
@@ -144,6 +206,24 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating Live Notification Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-teal-200 bg-white px-4 py-3 shadow-2xl text-xs font-bold text-slate-800">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-teal-500" />
+          </span>
+          <span>{toast}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="ml-2 text-slate-400 hover:text-slate-600"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }

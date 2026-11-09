@@ -9,11 +9,13 @@ import Badge from '../../components/Badge.jsx'
 import FormField from '../../components/FormField.jsx'
 import ErrorBanner from '../../components/ErrorBanner.jsx'
 import PageLoader from '../../components/PageLoader.jsx'
+import PayoutReceiptModal from '../../components/PayoutReceiptModal.jsx'
 
 export default function Finance() {
   const { user } = useAuth()
   const { data: payouts } = useData(() => getPayouts({ partnerEmail: user?.email }), [user?.email])
   const { data: bookings } = useData(() => getBookings({ partnerEmail: user?.email }), [user?.email])
+  const [selectedReceipt, setSelectedReceipt] = useState(null)
 
   const [bankData, setBankData] = useState({
     bankName: '',
@@ -221,6 +223,7 @@ export default function Finance() {
                     <th className="px-4 py-3">Jumlah Bersih</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Bukti / No. Ref</th>
+                    <th className="px-4 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -253,6 +256,30 @@ export default function Finance() {
                           </div>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        {p.status === 'paid' && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceipt(p)}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                          >
+                            <svg
+                              className="size-3 text-teal-700"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                              />
+                            </svg>
+                            Kwitansi
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -261,6 +288,12 @@ export default function Finance() {
           )}
         </div>
       </div>
+
+      <PayoutReceiptModal
+        payout={selectedReceipt}
+        bankInfo={bankData}
+        onClose={() => setSelectedReceipt(null)}
+      />
     </div>
   )
 }
