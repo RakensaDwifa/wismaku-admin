@@ -7,11 +7,12 @@ const VALID_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled']
 
 function dbToBooking(row) {
   const totalPrice = Number(row.total_price ?? 0)
-  const defaultFee = Math.round(totalPrice * 0.15)
+  const commRate = Number(row.hotels?.commission_rate ?? row.commission_rate ?? 0.15)
+  const defaultFee = Math.round(totalPrice * commRate)
   return {
     id: row.id,
     propertyId: row.hotel_id,
-    propertyName: row.hotel_name,
+    propertyName: row.hotels?.name || row.hotel_name,
     propertyImg: row.hotel_img,
     checkIn: row.check_in,
     checkOut: row.check_out,
@@ -24,6 +25,7 @@ function dbToBooking(row) {
     couponCode: row.coupon_code,
     couponDiscount: Number(row.coupon_discount ?? 0),
     totalPrice,
+    commissionRate: commRate,
     platformFee: Number(Number(row.platform_fee) > 0 ? row.platform_fee : defaultFee),
     partnerNet: Number(Number(row.partner_net) > 0 ? row.partner_net : totalPrice - defaultFee),
     guestName: row.guest_name,
@@ -53,21 +55,27 @@ export async function getBookings({ partnerEmail, email } = {}) {
     return list
   }
 
-  let query = supabase.from('bookings').select('*').order('created_at', { ascending: false })
+  let query = supabase
+    .from('bookings')
+    .select('*, hotels!inner(id, name, partner_email, commission_rate)')
+    .order('created_at', { ascending: false })
   if (partnerEmail) {
-    const { data: hotels } = await supabase
-      .from('hotels')
-      .select('id')
-      .eq('partner_email', String(partnerEmail).trim().toLowerCase())
-    const hotelIds = (hotels ?? []).map((h) => h.id)
-    if (hotelIds.length === 0) return []
-    query = query.in('hotel_id', hotelIds)
+    const clean = String(partnerEmail).trim().toLowerCase()
+    query = query.eq('hotels.partner_email', clean)
   }
   if (email) {
     query = query.eq('email', String(email).trim().toLowerCase())
   }
   const { data, error } = await query
-  if (error) throw new Error(error.message)
+  if (error) {
+    // Fallback jika relasi hotels!inner gagal, query biasa
+    const { data: fbData, error: fbErr } = await supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (fbErr) throw new Error(fbErr.message)
+    return (fbData ?? []).map(dbToBooking)
+  }
   return (data ?? []).map(dbToBooking)
 }
 

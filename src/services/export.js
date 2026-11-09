@@ -23,29 +23,34 @@ export function generateBookingsCSV(bookings) {
     'No Telepon Tamu',
     'Email Tamu',
     'Total Omzet Kotor (Rp)',
-    'Komisi WismaKu 15% (Rp)',
-    'Hak Bersih Mitra 85% (Rp)',
+    'Komisi Platform (Rp)',
+    'Hak Bersih Mitra (Rp)',
     'Status Pemesanan',
     'Metode Pembayaran',
   ]
 
-  const rows = (bookings || []).map((b) => [
-    b.id,
-    b.checkIn,
-    b.checkOut,
-    b.propertyName,
-    b.roomTypeName || 'Standar',
-    b.rooms || 1,
-    b.nights || 1,
-    b.guestName,
-    b.phone || '',
-    b.email || '',
-    Number(b.totalPrice || 0),
-    Number(b.platformFee || Math.round((b.totalPrice || 0) * 0.15)),
-    Number(b.partnerNet || Math.round((b.totalPrice || 0) * 0.85)),
-    b.status,
-    b.paymentMethod || 'Online Gateway',
-  ])
+  const rows = (bookings || []).map((b) => {
+    const rate = Number(b.commissionRate ?? 0.15)
+    const fee = Number(b.platformFee ?? Math.round(Number(b.totalPrice || 0) * rate))
+    const net = Number(b.partnerNet ?? Math.max(0, Number(b.totalPrice || 0) - fee))
+    return [
+      b.id,
+      b.checkIn,
+      b.checkOut,
+      b.propertyName,
+      b.roomTypeName || 'Standar',
+      b.rooms || 1,
+      b.nights || 1,
+      b.guestName,
+      b.phone || '',
+      b.email || '',
+      Number(b.totalPrice || 0),
+      fee,
+      net,
+      b.status,
+      b.paymentMethod || 'Online Gateway',
+    ]
+  })
 
   return [formatCSVRow(headers), ...rows.map(formatCSVRow)].join('\r\n')
 }
