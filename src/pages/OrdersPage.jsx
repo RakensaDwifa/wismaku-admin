@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
 import { useData } from '../hooks/useData.js'
 import { getBookings, updateBookingStatus, BOOKING_STATUS_LABELS } from '../services/booking.js'
+import { getRefundRequests } from '../services/refund.js'
 import { generateBookingsCSV, downloadCSV } from '../services/export.js'
 import StatCard from '../components/StatCard.jsx'
 import Badge from '../components/Badge.jsx'
@@ -14,6 +15,8 @@ export default function OrdersPage() {
   const { user } = useAuth()
   const filter = { partnerEmail: user?.email }
   const { data, refresh } = useData(() => getBookings(filter), [user?.email])
+  const { data: refunds } = useData(() => getRefundRequests(), [])
+  const refundMap = Object.fromEntries((refunds || []).map((r) => [String(r.bookingId), r]))
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [busyId, setBusyId] = useState(null)
@@ -185,6 +188,26 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Badge status={b.status}>{BOOKING_STATUS_LABELS[b.status] || b.status}</Badge>
+                    {refundMap[String(b.id)] && (
+                      <div className="mt-1">
+                        <span
+                          className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                            refundMap[String(b.id)].status === 'approved'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : refundMap[String(b.id)].status === 'rejected'
+                                ? 'bg-slate-100 text-slate-600'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200'
+                          }`}
+                        >
+                          Dispute:{' '}
+                          {refundMap[String(b.id)].status === 'approved'
+                            ? 'Refund Disetujui'
+                            : refundMap[String(b.id)].status === 'rejected'
+                              ? 'Refund Ditolak'
+                              : 'Pengajuan Refund'}
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -252,6 +275,26 @@ export default function OrdersPage() {
                 Malam
               </div>
             </div>
+
+            {refundMap[String(activeBooking.id)] && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 space-y-1">
+                <div className="font-bold flex items-center justify-between">
+                  <span>Permohonan Refund Tamu:</span>
+                  <span className="capitalize">{refundMap[String(activeBooking.id)].status}</span>
+                </div>
+                <div className="text-[11px] text-amber-800">
+                  Nominal: Rp {refundMap[String(activeBooking.id)].amount.toLocaleString('id-ID')}
+                </div>
+                <div className="text-[11px] text-amber-700">
+                  Alasan: {refundMap[String(activeBooking.id)].reason}
+                </div>
+                {refundMap[String(activeBooking.id)].hqNotes && (
+                  <div className="text-[11px] font-semibold text-slate-700 pt-1 border-t border-amber-200">
+                    Catatan HQ: {refundMap[String(activeBooking.id)].hqNotes}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-lg border border-slate-100 p-3">
