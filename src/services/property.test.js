@@ -72,12 +72,26 @@ describe('property service', () => {
       status: 'aktif',
       partnerEmail: 'mitra@wismaku.com',
     })
-    await addRoomType(p.id, { name: 'Deluxe', price: 250000, capacity: 2, qty: 2 })
+    await addRoomType(p.id, {
+      name: 'Deluxe',
+      price: 250000,
+      capacity: 2,
+      qty: 2,
+      weekendSurchargePercent: 20,
+    })
     let rooms = await getRoomTypes(p.id)
     expect(rooms.length).toBe(1)
-    await updateRoomType(p.id, rooms[0].id, { name: 'Deluxe+', price: 300000, capacity: 3, qty: 1 })
+    expect(rooms[0].weekendSurchargePercent).toBe(20)
+    await updateRoomType(p.id, rooms[0].id, {
+      name: 'Deluxe+',
+      price: 300000,
+      capacity: 3,
+      qty: 1,
+      weekendSurchargePercent: 25,
+    })
     rooms = await getRoomTypes(p.id)
     expect(rooms[0].name).toBe('Deluxe+')
+    expect(rooms[0].weekendSurchargePercent).toBe(25)
     await deleteRoomType(p.id, rooms[0].id)
     rooms = await getRoomTypes(p.id)
     expect(rooms.length).toBe(0)

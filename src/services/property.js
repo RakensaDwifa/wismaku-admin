@@ -13,6 +13,9 @@ function dbToProperty(row) {
     capacity: Number(r.capacity ?? 2),
     qty: Number(r.available_rooms ?? r.qty ?? 1),
     amenities: r.amenities ?? [],
+    weekendSurchargePercent: Number(
+      r.weekend_surcharge_percent ?? r.weekendSurchargePercent ?? row.weekend_surcharge_percent ?? 0,
+    ),
   }))
 
   return {
@@ -26,6 +29,7 @@ function dbToProperty(row) {
     amenities: row.amenities ?? [],
     partnerEmail: row.partner_email || '',
     commissionRate: row.commission_rate ?? 0.15,
+    weekendSurchargePercent: Number(row.weekend_surcharge_percent ?? 0),
     status: row.policies?.status || 'aktif',
     receptionPhone: row.policies?.reception_phone || row.reception_phone || '',
     checkInTime: row.policies?.check_in_time || '14:00',
@@ -236,6 +240,7 @@ export async function addRoomType(propertyId, payload) {
     original_price: Number(data.originalPrice || data.price),
     capacity: Number(data.capacity || 2),
     available_rooms: Number(data.qty ?? 1),
+    weekend_surcharge_percent: Number(data.weekendSurchargePercent ?? 0),
   }
   const rawTypes = prop.rawRoomTypes || []
   const updatedTypes = [...rawTypes, newRoom]
@@ -278,6 +283,7 @@ export async function updateRoomType(propertyId, roomTypeId, payload) {
           original_price: Number(data.originalPrice || data.price),
           capacity: Number(data.capacity || 2),
           available_rooms: Number(data.qty ?? 1),
+          weekend_surcharge_percent: Number(data.weekendSurchargePercent ?? 0),
         }
       : r,
   )

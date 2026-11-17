@@ -12,6 +12,7 @@ export default function ProfilePage() {
   // State profil
   const [name, setName] = useState(user?.name || '')
   const [phone, setPhone] = useState(user?.phone || '')
+  const [subRole, setSubRole] = useState(user?.subRole || 'owner')
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileMessage, setProfileMessage] = useState('')
   const [profileError, setProfileError] = useState('')
@@ -113,8 +114,8 @@ export default function ProfilePage() {
     setProfileMessage('')
     setProfileError('')
     try {
-      await updateUserProfile({ name, phone })
-      setProfileMessage('Profil pengelola berhasil diperbarui.')
+      await updateUserProfile({ name, phone, subRole })
+      setProfileMessage('Profil pengelola & hak sub-akun berhasil diperbarui.')
       setTimeout(() => setProfileMessage(''), 4000)
     } catch (err) {
       setProfileError(err.message || 'Gagal menyimpan profil.')
@@ -208,6 +209,20 @@ export default function ProfilePage() {
               />
             </FormField>
 
+            <FormField
+              label="Sub-Peran Akun Mitra"
+              hint="Owner memiliki wewenang penuh termasuk rekening; Frontdesk dibatasi untuk operasional check-in"
+            >
+              <select
+                value={subRole}
+                onChange={(e) => setSubRole(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:border-teal-700 focus:outline-none"
+              >
+                <option value="owner">Pemilik Properti (Owner) — Hak Akses Penuh & Rekening</option>
+                <option value="frontdesk">Resepsionis (Frontdesk) — Operasional Kamar & Check-In</option>
+              </select>
+            </FormField>
+
             <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3 text-xs space-y-1">
               <div className="flex justify-between">
                 <span className="text-slate-400">Peran Akun:</span>
@@ -215,7 +230,9 @@ export default function ProfilePage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Hak Akses:</span>
-                <span className="font-semibold text-slate-700">Penuh (Extranet Portal)</span>
+                <span className="font-semibold text-slate-700">
+                  {subRole === 'frontdesk' ? 'Operasional Frontdesk (Rekening Dikunci)' : 'Penuh (Extranet Portal)'}
+                </span>
               </div>
             </div>
 

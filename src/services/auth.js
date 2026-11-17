@@ -32,6 +32,7 @@ export async function login(email, password) {
       name: user.name,
       email: user.email,
       role: user.role,
+      subRole: user.subRole || 'owner',
       loggedInAt: new Date().toISOString(),
     })
     notify(SESSION_EVENT)
@@ -43,7 +44,7 @@ export async function login(email, password) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, role')
+    .select('name, role, sub_role')
     .eq('id', data.user.id)
     .maybeSingle()
 
@@ -52,6 +53,7 @@ export async function login(email, password) {
     name: profile?.name || data.user.email?.split('@')[0],
     email: data.user.email,
     role: profile?.role || 'mitra',
+    subRole: profile?.sub_role || 'owner',
     loggedInAt: new Date().toISOString(),
   }
 
@@ -109,19 +111,21 @@ export async function registerUser(payload) {
   return { id: authUser.user.id, ...data }
 }
 
-export async function updateUserProfile({ name, phone }) {
+export async function updateUserProfile({ name, phone, subRole }) {
   if (!name || name.trim().length < 3) {
     throw new Error('Nama pengelola minimal 3 karakter.')
   }
 
   const cleanName = name.trim()
   const cleanPhone = (phone || '').trim()
-
   const current = getActiveUser()
+  const cleanSubRole = subRole || current?.subRole || 'owner'
+
   const updatedUser = {
     ...current,
     name: cleanName,
     phone: cleanPhone,
+    subRole: cleanSubRole,
   }
 
   writeObject(ACTIVE_KEY, updatedUser)
@@ -130,7 +134,7 @@ export async function updateUserProfile({ name, phone }) {
     ensureSeed()
     const list = readList(USERS_KEY).map((u) => {
       if (u.email.toLowerCase() === current?.email?.toLowerCase()) {
-        return { ...u, name: cleanName, phone: cleanPhone }
+        return { ...u, name: cleanName, phone: cleanPhone, subRole: cleanSubRole }
       }
       return u
     })
@@ -138,10 +142,10 @@ export async function updateUserProfile({ name, phone }) {
   } else {
     try {
       await supabase.auth.updateUser({
-        data: { name: cleanName, phone: cleanPhone },
+        data: { name: cleanName, phone: cleanPhone, sub_role: cleanSubRole },
       })
       if (current?.id) {
-        await supabase.from('profiles').update({ name: cleanName }).eq('id', current.id)
+        await supabase.from('profiles').update({ name: cleanName, sub_role: cleanSubRole }).eq('id', current.id)
       }
     } catch {
       // fallback in local session

@@ -39,4 +39,17 @@ describe('payout service', () => {
       'Nama bank, nomor rekening, dan nama pemilik rekening wajib diisi.',
     )
   })
+
+  it('menolak simpan rekening jika akun memiliki sub-role frontdesk', async () => {
+    await expect(
+      saveBankInfo(
+        { email: 'staff-frontdesk@wismaku.com', subRole: 'frontdesk' },
+        {
+          bankName: 'BCA',
+          accountNumber: '1234567890',
+          accountHolder: 'Staf Frontdesk',
+        },
+      ),
+    ).rejects.toThrow('Hanya pemilik (Owner) yang berwenang mengubah rekening pencairan dana mitra.')
+  })
 })

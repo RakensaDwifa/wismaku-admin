@@ -35,6 +35,7 @@ export const PropertyPayloadSchema = z.object({
   receptionPhone: z.string().optional(),
   checkInTime: z.string().optional(),
   checkOutTime: z.string().optional(),
+  weekendSurchargePercent: z.number().min(0).max(100).default(0).optional(),
 })
 
 export const RoomTypePayloadSchema = z.object({
@@ -43,6 +44,7 @@ export const RoomTypePayloadSchema = z.object({
   originalPrice: z.number().int().positive().optional(),
   capacity: z.number().int().positive('Kapasitas minimal 1.'),
   qty: z.number().int().min(0).default(1),
+  weekendSurchargePercent: z.number().min(0).max(100).default(0).optional(),
 })
 
 export const CouponPayloadSchema = z.object({

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
 import { useData } from '../hooks/useData.js'
 import { getBookings, updateBookingStatus, BOOKING_STATUS_LABELS } from '../services/booking.js'
-import { getRefundRequests } from '../services/refund.js'
+import { getRefundRequests, respondToRefundRequest } from '../services/refund.js'
 import { generateBookingsCSV, downloadCSV } from '../services/export.js'
 import StatCard from '../components/StatCard.jsx'
 import Badge from '../components/Badge.jsx'
@@ -22,6 +22,37 @@ export default function OrdersPage() {
   const [busyId, setBusyId] = useState(null)
   const [activeBooking, setActiveBooking] = useState(null)
   const [printingBooking, setPrintingBooking] = useState(null)
+  const [disputeRefund, setDisputeRefund] = useState(null)
+  const [disputeResponse, setDisputeResponse] = useState('')
+  const [disputeEvidenceUrl, setDisputeEvidenceUrl] = useState('')
+  const [disputeBusy, setDisputeBusy] = useState(false)
+  const [disputeError, setDisputeError] = useState('')
+
+  const openDisputeModal = (refund) => {
+    setDisputeRefund(refund)
+    setDisputeResponse(refund?.partnerResponse || '')
+    setDisputeEvidenceUrl(refund?.partnerEvidenceUrl || '')
+    setDisputeError('')
+  }
+
+  const handleDisputeSubmit = async (e) => {
+    e.preventDefault()
+    if (!disputeRefund) return
+    setDisputeBusy(true)
+    setDisputeError('')
+    try {
+      await respondToRefundRequest(disputeRefund.id, {
+        response: disputeResponse,
+        evidenceUrl: disputeEvidenceUrl,
+      })
+      await refresh()
+      setDisputeRefund(null)
+    } catch (err) {
+      setDisputeError(err.message || 'Gagal mengirim sanggahan dispute.')
+    } finally {
+      setDisputeBusy(false)
+    }
+  }
 
   if (!data) return <PageLoader />
 
@@ -167,6 +198,16 @@ export default function OrdersPage() {
                     <div className="mt-0.5 text-xs text-slate-500">
                       {b.checkIn ?? '—'} s.d. {b.checkOut ?? '—'}
                     </div>
+                    {b.rescheduleCount > 0 && (
+                      <div className="mt-1">
+                        <span
+                          className="inline-flex items-center gap-1 rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-800 border border-teal-200"
+                          title={`Semula: ${b.originalCheckIn} s.d. ${b.originalCheckOut}`}
+                        >
+                          🗓️ Rescheduled ({b.rescheduleCount}x)
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-bold text-slate-800">{b.propertyName}</div>
@@ -219,6 +260,17 @@ export default function OrdersPage() {
                       >
                         🖨️ Struk
                       </button>
+
+                      {refundMap[String(b.id)] && refundMap[String(b.id)].status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => openDisputeModal(refundMap[String(b.id)])}
+                          className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 hover:bg-amber-100 transition"
+                          title="Tanggapi atau Sanggah Dispute Refund"
+                        >
+                          ⚖️ Sanggah
+                        </button>
+                      )}
 
                       <button
                         type="button"
@@ -277,22 +329,74 @@ export default function OrdersPage() {
             </div>
 
             {refundMap[String(activeBooking.id)] && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 space-y-1">
-                <div className="font-bold flex items-center justify-between">
-                  <span>Permohonan Refund Tamu:</span>
-                  <span className="capitalize">{refundMap[String(activeBooking.id)].status}</span>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900 space-y-2">
+                <div className="font-bold flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <span>⚠️ Sengketa / Dispute Refund Tamu:</span>
+                  </span>
+                  <span className="capitalize font-extrabold px-2 py-0.5 rounded bg-amber-200/70 text-amber-950">
+                    {refundMap[String(activeBooking.id)].status}
+                  </span>
                 </div>
                 <div className="text-[11px] text-amber-800">
                   Nominal: Rp {refundMap[String(activeBooking.id)].amount.toLocaleString('id-ID')}
                 </div>
-                <div className="text-[11px] text-amber-700">
-                  Alasan: {refundMap[String(activeBooking.id)].reason}
+                <div className="text-[11px] text-amber-800">
+                  <span className="font-semibold">Alasan Tamu:</span> {refundMap[String(activeBooking.id)].reason}
                 </div>
-                {refundMap[String(activeBooking.id)].hqNotes && (
-                  <div className="text-[11px] font-semibold text-slate-700 pt-1 border-t border-amber-200">
-                    Catatan HQ: {refundMap[String(activeBooking.id)].hqNotes}
+                {refundMap[String(activeBooking.id)].partnerResponse && (
+                  <div className="rounded border border-amber-200 bg-white/70 p-2 text-[11px] text-slate-800 space-y-1">
+                    <div className="font-bold text-teal-800">Tanggapan Sanggahan Anda (Mitra):</div>
+                    <p className="italic">"{refundMap[String(activeBooking.id)].partnerResponse}"</p>
+                    {refundMap[String(activeBooking.id)].partnerEvidenceUrl && (
+                      <div>
+                        <a
+                          href={refundMap[String(activeBooking.id)].partnerEvidenceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-teal-700 underline"
+                        >
+                          🔗 Buka Bukti Dokumen / Foto
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
+                {refundMap[String(activeBooking.id)].status === 'pending' && (
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => openDisputeModal(refundMap[String(activeBooking.id)])}
+                      className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition"
+                    >
+                      {refundMap[String(activeBooking.id)].partnerResponse
+                        ? '✏️ Perbarui Sanggahan Mitra'
+                        : '⚖️ Ajukan Sanggahan & Bukti'}
+                    </button>
+                  </div>
+                )}
+                {refundMap[String(activeBooking.id)].hqNotes && (
+                  <div className="text-[11px] font-semibold text-slate-700 pt-1 border-t border-amber-200">
+                    Catatan Tim HQ: {refundMap[String(activeBooking.id)].hqNotes}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeBooking.rescheduleCount > 0 && (
+              <div className="rounded-lg border border-teal-200 bg-teal-50/70 p-3 text-xs text-teal-900 space-y-1">
+                <div className="font-extrabold flex items-center gap-1.5 text-teal-800">
+                  <span>🗓️ Catatan Perubahan Jadwal (Rescheduled Mandiri)</span>
+                </div>
+                <div className="text-[11px] text-teal-850">
+                  Tamu telah mengubah tanggal menginap sebanyak {activeBooking.rescheduleCount} kali.
+                </div>
+                <div className="text-[11px] text-slate-600">
+                  Jadwal Semula: <span className="font-semibold">{activeBooking.originalCheckIn} s.d. {activeBooking.originalCheckOut}</span>
+                </div>
+                <div className="text-[11px] text-teal-800 font-bold">
+                  Jadwal Baru: {activeBooking.checkIn} s.d. {activeBooking.checkOut}
+                </div>
               </div>
             )}
 
@@ -365,6 +469,82 @@ export default function OrdersPage() {
 
       {/* Modal Cetak Struk Registrasi */}
       {printingBooking && <ReceiptModal booking={printingBooking} onClose={() => setPrintingBooking(null)} />}
+
+      {/* Modal Sanggah Dispute Refund Mitra */}
+      {disputeRefund && (
+        <Modal
+          title={`Sanggah Permohonan Refund #${disputeRefund.id.slice(0, 8)}`}
+          onClose={() => setDisputeRefund(null)}
+        >
+          <form onSubmit={handleDisputeSubmit} className="space-y-4 text-sm">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900 space-y-1">
+              <div className="font-bold">Klaim Pengajuan Tamu:</div>
+              <div className="text-[11px] text-amber-800">
+                Tamu: <span className="font-semibold">{disputeRefund.guestName}</span> ({disputeRefund.email})
+              </div>
+              <div className="text-[11px] text-amber-800">
+                Nominal: <span className="font-bold">Rp {disputeRefund.amount.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="text-[11px] text-amber-700 font-medium">
+                Alasan Tamu: "{disputeRefund.reason}"
+              </div>
+            </div>
+
+            {disputeError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
+                {disputeError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Tanggapan / Argumen Sanggahan Mitra <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={disputeResponse}
+                onChange={(e) => setDisputeResponse(e.target.value)}
+                placeholder="Jelaskan alasan penolakan refund, fakta operasional di lapangan, atau kondisi kamar..."
+                className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Tautan Bukti Pendukung (Foto / CCTV / Dokumen) <span className="text-slate-400 font-normal">(Opsional)</span>
+              </label>
+              <input
+                type="url"
+                value={disputeEvidenceUrl}
+                onChange={(e) => setDisputeEvidenceUrl(e.target.value)}
+                placeholder="https://... (tautan foto nota check-in, cctv, dll)"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-mono text-slate-800 placeholder-slate-400 focus:border-teal-700 focus:outline-none"
+              />
+              <p className="mt-1 text-[11px] text-slate-400">
+                Tim HQ akan meninjau bukti ini sebelum memutuskan persetujuan permohonan refund tamu.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDisputeRefund(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={disputeBusy}
+                className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-bold text-white hover:bg-teal-800 disabled:opacity-50"
+              >
+                {disputeBusy ? 'Mengirim Sanggahan...' : 'Kirim Sanggahan ke HQ'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   )
 }

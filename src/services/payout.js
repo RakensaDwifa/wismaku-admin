@@ -100,6 +100,10 @@ export async function getBankInfo(user) {
 }
 
 export async function saveBankInfo(user, bankInfo) {
+  if (user?.subRole === 'frontdesk') {
+    throw new Error('Hanya pemilik (Owner) yang berwenang mengubah rekening pencairan dana mitra.')
+  }
+
   if (!bankInfo?.bankName || !bankInfo?.accountNumber || !bankInfo?.accountHolder) {
     throw new Error('Nama bank, nomor rekening, dan nama pemilik rekening wajib diisi.')
   }

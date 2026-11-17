@@ -9,7 +9,7 @@ import EmptyState from '../../components/EmptyState.jsx'
 import PageLoader from '../../components/PageLoader.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 
-const EMPTY = { name: '', price: '', originalPrice: '', capacity: '2', qty: '1' }
+const EMPTY = { name: '', price: '', originalPrice: '', capacity: '2', qty: '1', weekendSurchargePercent: '0' }
 
 export default function RoomsPage() {
   const { id } = useParams()
@@ -35,6 +35,7 @@ export default function RoomsPage() {
       originalPrice: r.originalPrice ? String(r.originalPrice) : '',
       capacity: String(r.capacity),
       qty: String(r.qty ?? 1),
+      weekendSurchargePercent: String(r.weekendSurchargePercent ?? 0),
     })
     setEditing({ mode: 'edit', roomType: r })
     setError('')
@@ -50,6 +51,7 @@ export default function RoomsPage() {
         originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
         capacity: Number(form.capacity),
         qty: Number(form.qty),
+        weekendSurchargePercent: Number(form.weekendSurchargePercent || 0),
       }
       if (editing.mode === 'edit') await updateRoomType(id, editing.roomType.id, payload)
       else await addRoomType(id, payload)
@@ -172,6 +174,14 @@ export default function RoomsPage() {
                     {r.originalPrice && r.originalPrice > r.price && (
                       <div className="text-[11px] text-slate-400 line-through">
                         Rp {r.originalPrice.toLocaleString('id-ID')}
+                      </div>
+                    )}
+                    {r.weekendSurchargePercent > 0 && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center rounded bg-amber-50 px-1.5 py-0.5 text-[10.5px] font-bold text-amber-800 border border-amber-200">
+                          ⚡ Weekend +{r.weekendSurchargePercent}% (Rp{' '}
+                          {Math.round(r.price * (1 + r.weekendSurchargePercent / 100)).toLocaleString('id-ID')})
+                        </span>
                       </div>
                     )}
                   </td>
@@ -300,6 +310,23 @@ export default function RoomsPage() {
                 />
               </FormField>
             </div>
+            <FormField
+              label="Surcharge Akhir Pekan (Jumat & Sabtu Malam %)"
+              hint="Otomatis menaikkan tarif kamar untuk malam akhir pekan (misal 15% atau 20%)"
+            >
+              <div className="relative">
+                <input
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-800 focus:border-teal-700 focus:outline-none"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={form.weekendSurchargePercent}
+                  onChange={(e) => setForm((f) => ({ ...f, weekendSurchargePercent: e.target.value }))}
+                />
+                <span className="absolute right-3 top-2.5 text-xs font-bold text-slate-400">% Surcharge</span>
+              </div>
+            </FormField>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"

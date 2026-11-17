@@ -34,6 +34,10 @@ function dbToBooking(row) {
     status: row.status,
     paymentMethod: row.payment_method,
     paidAt: row.paid_at,
+    originalCheckIn: row.original_check_in || row.originalCheckIn || null,
+    originalCheckOut: row.original_check_out || row.originalCheckOut || null,
+    rescheduleCount: Number(row.reschedule_count ?? row.rescheduleCount ?? 0),
+    rescheduledAt: row.rescheduled_at || row.rescheduledAt || null,
     createdAt: row.created_at,
   }
 }
